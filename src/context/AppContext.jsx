@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
-import testData from '../data/test_data.json';
+import { API_BASE_URL } from '../config.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 const AppContext = createContext({});
@@ -12,42 +12,66 @@ const AppContext = createContext({});
  * - Populate the graphs with the stored data
  */
 const useAppContextProvider = () => {
-  const [graphData, setGraphData] = useState(testData);
+  //make sure graphData always starts with an empty structure to prevent errors
+  const [graphData, setGraphData] = useState({
+    yearResults: [],
+    citizenshipResults: [],
+  });
+
   const [isDataLoading, setIsDataLoading] = useState(false);
 
   useLocalStorage({ graphData, setGraphData });
 
-  const getFiscalData = () => {
-    // TODO: Replace this with functionality to retrieve the data from the fiscalSummary endpoint
-    const fiscalDataRes = testData;
-    return fiscalDataRes;
-  };
-
-  const getCitizenshipResults = async () => {
-    // TODO: Replace this with functionality to retrieve the data from the citizenshipSummary endpoint
-    const citizenshipRes = testData.citizenshipResults;
-    return citizenshipRes;
-  };
-
-  const updateQuery = async () => {
-    setIsDataLoading(true);
-  };
-
   const fetchData = async () => {
     // TODO: fetch all the required data and set it to the graphData state
-  };
+    try {
+  
+    //Fetch fiscal year data
+    const fiscalResponse = await axios.get(`${API_BASE_URL}/fiscalSummary`)
+    const fiscalData = fiscalResponse.data
 
-  const clearQuery = () => {
-    setGraphData({});
-  };
+    //Fetch citizenship data
+    const citizenshipResponse = await axios.get(`${API_BASE_URL}/citizenshipSummary`)
+    const citizenshipData = citizenshipResponse.data
 
-  const getYears = () => graphData?.yearResults?.map(({ fiscal_year }) => Number(fiscal_year)) ?? [];
+    //Log API response to console for debugging
+    console.log('Fetched data from API:', {fiscalData, citizenshipData})
 
-  useEffect(() => {
-    if (isDataLoading) {
-      fetchData();
+    //Change the data to match the test_data.json format
+    const formattedData = {
+      yearResults: fiscalData?.yearResults || [], 
+      citizenshipResults: Array.isArray(citizenshipData) ? citizenshipData : [],  
     }
-  }, [isDataLoading]);
+    
+    //update state with new API data
+    setGraphData(formattedData)
+  } catch (error) {
+    console.error("Error fetching API data", error.message)
+  } finally {
+    setIsDataLoading(false) //hide "loading" after data fetch
+  }
+};
+
+  //update data when the user requests it
+  const updateQuery = async () => {
+    setIsDataLoading(true)          
+    await fetchData()
+  };
+
+  //clears the stored graph data
+  const clearQuery = () => {
+    setGraphData({
+      yearResults: [],
+      citizenshipResults: [],
+    });
+  };
+  // makes sure yearResults is always an array before mapping
+  const getYears = () => Array.isArray(graphData?.yearResults) ? graphData.yearResults.map(({ fiscal_year }) => Number(fiscal_year)) : [];
+
+  // fetch data once when the app starts
+  useEffect(() => {
+    fetchData() 
+  }, []);
 
   return {
     graphData,
