@@ -23,6 +23,10 @@ const router = createBrowserRouter([
     element: pageWrapper(<Profile />),
     errorElement: <NotFoundPage />,
   },
+  {
+    path: '/not-found',
+    element: <NotFoundPage />,
+  }
 ]);
 
 export const App = () => {

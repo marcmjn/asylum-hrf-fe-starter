@@ -65,6 +65,7 @@ const useAppContextProvider = () => {
       citizenshipResults: [],
     });
   };
+  
   // makes sure yearResults is always an array before mapping
   const getYears = () => Array.isArray(graphData?.yearResults) ? graphData.yearResults.map(({ fiscal_year }) => Number(fiscal_year)) : [];
 
